@@ -1,0 +1,186 @@
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+
+export interface Event {
+  id: string;
+  Asset: string;
+  'Live Date': string;
+  'Live Time': string;
+  'End Time': string;
+  'KOL name': string;
+  Studio: string;
+  'Tech 1': string;
+  'Tech 2': string;
+  'Tech 3': string;
+  Note: string;
+  day: number;
+  month: number;
+  year: number;
+}
+
+interface EventContextType {
+  events: Event[];
+  setEvents: React.Dispatch<React.SetStateAction<Event[]>>;
+  addEvent: (event: Event) => void;
+  updateEvent: (id: string, updatedEvent: Event) => void;
+  deleteEvent: (id: string) => void;
+}
+
+const EventContext = createContext<EventContextType | undefined>(undefined);
+
+export const useEvents = () => {
+  const context = useContext(EventContext);
+  if (!context) {
+    throw new Error('useEvents must be used within EventProvider');
+  }
+  return context;
+};
+
+const initialCsvData = `Asset,Live Date,Live Time,End Time,KOL name,Studio,Tech 1,Tech 2,Tech 3,Leave = ไม่แยู่,Note
+SLD,Fri-1-May,12:00,14:00,Air Phantila,Studio 1,Dee,Geng,,,
+SLD,Fri-1-May,12:00,14:00,Nue,Studio 5,Oat,K,,,
+SBD HP#2,Fri-1-May,12:00,14:00,Plustor,Studio 2,Jay,,,,
+SLD,Fri-1-May,18:00,20:00,Namtan Chalita,Studio 2,PK,PK,,,
+SLD,Fri-1-May,18:00,20:00,Tack Pharunyoo,Studio 1,Dee,Geng,,,
+SLD,Fri-1-May,20:00,22:00,Tao AF,Studio 2,PK,PK,,,
+SLD,Fri-1-May,20:00,23:00,Thank After Yum,Studio 1,Dee,Geng,Jay,,
+SBD HP#2,Sat-2-May,12:00,14:00,Dutdew,Studio 2,Dee,,,Oat ไม่อยู่,
+SBD HP#2,Sun-3-May,12:00,14:00,Preawah,Studio 2,Jay,,,Oat ไม่อยู่,
+D-Day,Mon-4-May,23:00,1:00,Thank After Yum,Studio 5,Dee,Geng,Jay,,
+D-Day,Tue-5-May,12:00,14:00,Cheer,Studio 5,Dee,Geng,,,
+D-Day,Tue-5-May,12:00,14:00,Tonhorm,Studio 4,Freelance,Freelance,,,
+Barter Tier 1,Tue-5-May,12:00,13:00,PeemWasu,Studio 2,Oat,K,,,
+D-Day,Tue-5-May,18:00,20:00,Ning Panita,Studio 5,Dee,Geng,,,
+D-Day,Tue-5-May,18:00,20:00,Luke Ishikawa,Studio 4,PK,PK,,,
+Barter Tier 1,Tue-5-May,19:00,20:00,Perth,Studio 2,Oat,K,,,
+D-Day,Tue-5-May,20:00,23:00,Thank After Yum,Studio 5,Dee,Geng,Jay,,
+D-Day,Tue-5-May,20:00,22:00,Boy Pakorn,Studio 4,PK,PK,,,
+MC x Celeb,Thu-7-May,10:00,12:00,Air Phantila,Studio 1,Dee,Geng,,,
+MC x Celeb,Thu-7-May,12:00,14:00,Michelle,Studio 1,Dee,Geng,,,
+MC x Celeb,Thu-7-May,17:00,19:00,Orio,Studio 1,Dee,Geng,,,
+MC x Celeb,Thu-7-May,20:00,22:00,Nue,Studio 1,Jay,Geng,,,
+Barter Tier 1,Thu-7-May,20:00,21:00,Namping,Studio 2,Oat,K,,,
+SBD HP#2,Fri-8-May,12:00,14:00,Air Phantila,Studio 2,Dee,,,,
+SBD HP#1,Sat-9-May,12:00,14:00,Cheer Thikamporn,Studio 2,Jay,,,D ไม่อยู่,
+SBD HP#2,Mon-11-May,12:00,14:00,Air Phantila,Studio 2,Geng,,,D ไม่อยู่,
+MC x Celeb,Tue-12-May,10:00,12:00,Lily,Studio 1,Oat,K,,,
+MC x Celeb,Tue-12-May,12:00,14:00,Tum Warawut,Studio 1,Oat,K,,,
+SBD HP#1,Tue-12-May,12:00,14:00,Cheer Thikamporn,Studio 2,Dee,,,,
+MC x Celeb,Tue-12-May,17:00,19:00,Bitoey Rsiam,Studio 1,Oat,K,,,
+MC x Celeb,Tue-12-May,20:00,22:00,Nongh Tana,Studio 1,Geng,Jay,,,
+MC x Celeb,Wed-13-May,10:00,12:00,Fon Nalinthip,Studio 1,Dee,Geng,,,
+MC x Celeb,Wed-13-May,12:00,14:00,Boy Pisanu,Studio 1,Dee,Geng,,,
+SBD HP#1,Wed-13-May,12:00,14:00,Preawah,Studio 2,Oat,,,,
+MC x Celeb,Wed-13-May,17:00,19:00,Giftza Piya,Studio 1,Dee,Geng,,,
+MC x Celeb,Wed-13-May,20:00,22:00,Lala,Studio 1,Oat,Geng,Jay,,
+MC x Celeb,Thu-14-May,10:00,12:00,Toy Pathompong,Studio 1,Dee,Geng,,,
+MC x Celeb,Thu-14-May,12:00,14:00,Jooy,Studio 1,Dee,Geng,,,
+SBD HP#1,Thu-14-May,12:00,14:00,Cheer Thikamporn,Studio 2,K,,,,
+MC x Celeb,Thu-14-May,17:00,19:00,Noon Ramida,Studio 1,Dee,Geng,,,
+MC x Celeb,Thu-14-May,20:00,22:00,Dj Push,Studio 1,Oat,Jay,,,
+Mid-Month,Fri-15-May,10:00,12:00,Giftza Piya,Studio 1,Dee,Geng,,,
+Mid-Month,Fri-15-May,10:00,12:00,Plustor,Studio 5,Oat,K,,,
+Mid-Month,Fri-15-May,12:00,14:00,Aerin,Studio 1,Dee,Geng,,,
+Mid-Month,Fri-15-May,12:00,14:00,Tonhorm,Studio 5,Oat,K,,,
+Mid-Month,Fri-15-May,18:00,20:00,Michelle,Studio 1,Dee,Geng,,,
+Mid-Month,Fri-15-May,18:00,20:00,Seya Thongchua,Studio 5,PK,PK,,,
+Mid-Month,Fri-15-May,20:00,22:00,Gavind,Studio 5,PK,PK,,,
+Mid-Month,Fri-15-May,20:00,23:00,Thank After Yum,Studio 1,Dee,Geng,Jay,,
+SBD HP#1,Sat-16-May,12:00,14:00,Air Phantila,Studio 2,Dee,,,,
+SBD HP#2,Sun-17-May,12:00,14:00,Preawah,Studio 2,Jay,,,,
+SBD HP#2,Mon-18-May,12:00,14:00,Plustor,Studio 2,K,,,,
+MC x Celeb,Tue-19-May,10:00,12:00,Michelle,Studio 1,Dee,Geng,,,
+MC x Celeb,Tue-19-May,12:00,14:00,Namtan Chalita,Studio 1,Dee,Geng,,,
+SBD HP#2,Tue-19-May,12:00,14:00,Preawah,Studio 2,Oat,,,,
+MC x Celeb,Tue-19-May,17:00,19:00,Air Phantila,Studio 1,Dee,Geng,,,
+MC x Celeb,Tue-19-May,20:00,22:00,Ohn sri1000,Studio 1,Oat,Jay,,,
+MC x Celeb,Wed-20-May,10:00,12:00,DJ Dada,Studio 1,Dee,Geng,,,
+MC x Celeb,Wed-20-May,12:00,14:00,Plustor,Studio 1,Dee,Geng,,,
+SBD HP#1,Wed-20-May,12:00,14:00,Cheer Thikamporn,Studio 2,K,,,,
+MC x Celeb,Wed-20-May,17:00,19:00,Tack Pharunyoo,Studio 1,Dee,Geng,,,
+MC x Celeb,Wed-20-May,20:00,22:00,Chin Chinawut,Studio 1,Dee,Jay,,,
+MC x Celeb,Thu-21-May,10:00,12:00,Milla Marisa,Studio 1,Oat,K,,,
+MC x Celeb,Thu-21-May,12:00,14:00,Tubtim Anyarin,Studio 1,Oat,K,,,
+SBD HP#2,Thu-21-May,12:00,14:00,Plustor,Studio 2,Dee,,,,
+MC x Celeb,Thu-21-May,17:00,19:00,Ball Kummun,Studio 1,Dee,Geng,,,
+MC x Celeb,Thu-21-May,20:00,22:00,Bifern Passakorn,Studio 1,Dee,Geng,,,
+SBD HP#2,Fri-22-May,12:00,14:00,Air Phantila,Studio 2,K,,,,
+SBD HP#2,Sat-23-May,12:00,14:00,Cheer Thikamporn,Studio 2,Jay,,,,
+SBD HP#2,Sun-24-May,12:00,14:00,Cheer Thikamporn,Studio 2,Dee,,,,
+Payday,Mon-25-May,10:00,12:00,Pearwah,Studio 1,Oat,K,,,
+Payday,Mon-25-May,10:00,12:00,Air Phantila,Studio 5,Dee,Geng,,,
+Payday,Mon-25-May,12:00,14:00,Ning Panita,Studio 5,Dee,Geng,,,
+Payday,Mon-25-May,12:00,14:00,Cheer,Studio 1,Oat,K,,,
+Payday,Mon-25-May,18:00,20:00,Aerin,Studio 1,Dee,Geng,Jay,,
+Payday,Mon-25-May,18:00,20:00,Kwan Usamanee,Studio 5,PK,PK,,,
+Payday,Mon-25-May,20:00,22:00,Dutdew,Studio 1,Dee,Geng,Jay,,
+Payday,Mon-25-May,20:00,22:00,Pancake Khemanit,Studio 5,PK,PK,,,
+MC x Celeb,Tue-26-May,10:00,12:00,Fon Nalinthip,Studio 1,Oat,K,,,
+MC x Celeb,Tue-26-May,12:00,14:00,Nan Lardapha,Studio 1,Oat,K,,,
+SBD HP#2,Tue-26-May,12:00,14:00,Plustor,Studio 2,Dee,,,,
+MC x Celeb,Tue-26-May,17:00,19:00,Plustor,Studio 1,Oat,K,,,
+MC x Celeb,Tue-26-May,20:00,22:00,Typhoon,Studio 1,Geng,Jay,,,
+MC x Celeb,Wed-27-May,10:00,12:00,Orio,Studio 1,Dee,Geng,,,
+MC x Celeb,Wed-27-May,12:00,14:00,Nue,Studio 1,Dee,Geng,,,
+SBD HP#2,Wed-27-May,12:00,14:00,Cheer Thikamporn,Studio 2,K,,,,
+MC x Celeb,Wed-27-May,17:00,19:00,Giftza Piya,Studio 1,Dee,Geng,,,
+MC x Celeb,Wed-27-May,20:00,22:00,Dutdew,Studio 1,Oat,K,Jay,,
+MC x Celeb,Thu-28-May,10:00,12:00,Joy Rinlanee,Studio 1,Dee,Geng,,,
+MC x Celeb,Thu-28-May,12:00,14:00,Ice Papitchaya,Studio 1,Dee,Geng,,,
+SBD HP#1,Thu-28-May,12:00,14:00,Air Phantila,Studio 2,Oat,,,,
+MC x Celeb,Thu-28-May,17:00,19:00,CherreenHvk,Studio 1,Dee,Geng,,,
+MC x Celeb,Thu-28-May,20:00,22:00,Pae Mild,Studio 1,Oat,K,,,
+SBD HP#2 (Upsize),Fri-29-May,14:00,16:00,Dutdew,Studio 2,Dee,,,,
+SBD HP#1,Sat-30-May,12:00,14:00,Dutdew,Studio 2,Jay,,,,
+SBD HP#1,Sun-31-May,12:00,14:00,Preawah,Studio 2,Dee,,,,`;
+
+const parseCSV = (data: string): Event[] => {
+  const lines = data.split('\n');
+  const headers = lines[0].split(',');
+  const result: Event[] = [];
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+  for (let i = 1; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (!line) continue;
+    const currentline = line.split(',');
+    const obj: any = {};
+    for (let j = 0; j < headers.length; j++) {
+      obj[headers[j]] = currentline[j]?.trim() || "";
+    }
+    const dateParts = obj['Live Date']?.split('-');
+    if (dateParts && dateParts.length >= 3) {
+      obj.id = `evt-${i}-${Math.random().toString(36).substr(2, 5)}`;
+      obj.day = parseInt(dateParts[1]);
+      obj.month = months.indexOf(dateParts[2]);
+      obj.year = 2026;
+      result.push(obj as Event);
+    }
+  }
+  return result;
+};
+
+export const EventProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const [events, setEvents] = useState<Event[]>([]);
+
+  useEffect(() => {
+    setEvents(parseCSV(initialCsvData));
+  }, []);
+
+  const addEvent = (event: Event) => {
+    setEvents(prev => [...prev, event]);
+  };
+
+  const updateEvent = (id: string, updatedEvent: Event) => {
+    setEvents(prev => prev.map(e => e.id === id ? updatedEvent : e));
+  };
+
+  const deleteEvent = (id: string) => {
+    setEvents(prev => prev.filter(e => e.id !== id));
+  };
+
+  return (
+    <EventContext.Provider value={{ events, setEvents, addEvent, updateEvent, deleteEvent }}>
+      {children}
+    </EventContext.Provider>
+  );
+};
